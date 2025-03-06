@@ -98,3 +98,23 @@ class CreateOrder(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+class DeleteOrder(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, id):
+        try:
+            if request.user.is_staff:
+                order = Order.objects.get(id=id)
+            else:
+                order = Order.objects.get(id=id, user=request.user)
+
+            order.status = 'deleted'
+            order.save()
+
+            return Response({"detail": "Order status updated to 'deleted'"}, status=status.HTTP_200_OK)
+
+        except Order.DoesNotExist:
+            return Response({"detail": "Order not found or not authorized to update this order."}, status=status.HTTP_404_NOT_FOUND)
+

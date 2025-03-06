@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import EventChangeView, EventList, LogoutView, UserRegisterView, CreateOrder
+from .views import EventChangeView, EventList, LogoutView, UserRegisterView, CreateOrder, DeleteOrder
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
@@ -14,4 +14,5 @@ urlpatterns = [
     path('events/', EventList.as_view(), name='event_list'),
     path('events/<int:id>/', EventChangeView.as_view(), name='event_change'),
     path("orders/", CreateOrder.as_view(), name="order_create"),
+    path("orders/<int:id>/delete/", DeleteOrder.as_view(), name="order_delete"),
 ]

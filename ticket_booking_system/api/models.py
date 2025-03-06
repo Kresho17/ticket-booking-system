@@ -31,6 +31,7 @@ class Order(models.Model):
         ('pending', 'Pending'),
         ('successful', 'Successful'),
         ('failed', 'Failed'),
+        ('deleted', 'Deleted')
     ]
     
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders')
