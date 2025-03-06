@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
 from rest_framework.views import APIView
 from .models import Ticket, Event, Order
-from .serializers import TicketSerializer, EventSerializer, OrderSerializer
+from .serializers import TicketSerializer, EventSerializer, OrderSerializer, UserRegistrationSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 
@@ -46,3 +46,55 @@ class LogoutView(APIView):
         
         except TokenError:
             return Response({'detail': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
+        
+
+class UserRegisterView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+
+        serializer = UserRegistrationSerializer(data = request.data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'detail': 'User registered successfully.'}, status=status.HTTP_201_CREATED)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+class EventChangeView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Event.objects.all()
+    serializer_class = EventSerializer
+    lookup_field = 'id'
+    
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [AllowAny()]
+        else:
+            return [IsAdminUser()]
+
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+    
+    def put(self, request, *args, **kwargs):
+        return super().put(request, *args, **kwargs)
+    
+    def patch(self, request, *args, **kwargs):
+        return super().patch(request, *args, **kwargs)
+    
+    def delete(self, request, *args, **kwargs):
+        return super().delete(request, *args, **kwargs)
+    
+
+class CreateOrder(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = OrderSerializer(data = request.data, partial=True)
+
+        if serializer.is_valid():
+            print(request.user)
+            serializer.save(user = request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
