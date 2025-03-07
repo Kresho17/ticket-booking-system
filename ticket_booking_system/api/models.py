@@ -14,12 +14,12 @@ class Event(models.Model):
     location = models.CharField(max_length=255)
     max_tickets = models.PositiveIntegerField()
 
-    # TODO: Implement the counting of the available tickets
     def available_tickets(self):
-        pass
+        return self.max_tickets - self.sold_tickets()
 
     def sold_tickets(self):
-        pass
+        return self.tickets.filter(order__status__in=['pending', 'successful']).count()
+
 
     def __str__(self):
         return self.name

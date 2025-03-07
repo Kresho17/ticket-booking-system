@@ -90,10 +90,9 @@ class CreateOrder(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        serializer = OrderSerializer(data = request.data, partial=True)
+        serializer = OrderSerializer(data = request.data, partial=True, context={'request': request})
 
         if serializer.is_valid():
-            print(request.user)
             serializer.save(user = request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -112,6 +111,9 @@ class DeleteOrder(APIView):
 
             order.status = 'deleted'
             order.save()
+
+            tickets = Ticket.objects.filter(order=order)
+            tickets.delete()
 
             return Response({"detail": "Order status updated to 'deleted'"}, status=status.HTTP_200_OK)
 
