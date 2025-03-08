@@ -1,18 +1,22 @@
-from rest_framework import viewsets
+import logging
+import random
+import requests
+from django.conf import settings
 from rest_framework import generics
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
 from rest_framework.views import APIView
 from .models import Ticket, Event, Order
-from .serializers import TicketSerializer, EventSerializer, OrderSerializer, UserRegistrationSerializer
+from .serializers import EventSerializer, OrderSerializer, UserRegistrationSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 
-class TicketViewSet(viewsets.ModelViewSet):
-    queryset = Ticket.objects.all()
-    serializer_class = TicketSerializer
 
+logger = logging.getLogger("Payments_logger")
+
+
+# EventList responsible for Listing Event and creating a new event
 class EventList(generics.ListCreateAPIView):
     queryset = Event.objects.all()
     serializer_class = EventSerializer
@@ -25,11 +29,8 @@ class EventList(generics.ListCreateAPIView):
             return [IsAdminUser(), IsAuthenticated()]
         return super().get_permissions()
 
-class OrderViewSet(viewsets.ModelViewSet):
-    queryset = Order.objects.all()
-    serializer_class = OrderSerializer
 
-
+# LogoutView responsible for logut the user (blacklisting tokens)
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -48,6 +49,7 @@ class LogoutView(APIView):
             return Response({'detail': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
         
 
+# UserRegisterView responsible for user registration
 class UserRegisterView(APIView):
     permission_classes = [AllowAny]
 
@@ -62,6 +64,7 @@ class UserRegisterView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 
+# EventChangeView responsible for CRUD operation for an event
 class EventChangeView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Event.objects.all()
     serializer_class = EventSerializer
@@ -99,6 +102,7 @@ class CreateOrder(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 
+# DeleteOrder responsible for canceling orders [Admmin, User who requested it] 
 class DeleteOrder(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -120,3 +124,67 @@ class DeleteOrder(APIView):
         except Order.DoesNotExist:
             return Response({"detail": "Order not found or not authorized to update this order."}, status=status.HTTP_404_NOT_FOUND)
 
+
+# SimulatePayment responsible for payment service provider simulation
+class SimulatePayment(APIView):
+    permission_classes = [AllowAny] 
+
+    def get(self, request):
+        # Random success or failure simulation
+        success = random.choice([True, False])
+
+        if success:
+            return Response(
+                {"message": "Payment was successful.", "status": "successful"},
+                status=status.HTTP_200_OK
+            )
+        else:
+            return Response(
+                {"message": "Payment failed.", "status": "failed"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+
+# ProcessPayment responsible for ticket payment
+class ProcessPayment(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, id):
+        try:
+            order = Order.objects.get(id=id)
+
+            # The payment has either failed or been made.
+            if order.status != 'pending':
+                return Response(
+                    {"message": f"Order {id} payment cannot be processed."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Simulate the payment process
+            payment_response = requests.get(
+                f"{settings.BASE_URL}/api/simulate-payment/"
+            )
+
+            if payment_response.status_code == 200:
+                order.status = 'successful'
+                order.save()
+                return Response(
+                    {"message": f"Order {id} payment was successful."},
+                    status=status.HTTP_200_OK
+                )
+            else:
+                # Continues to wait for successful payment
+                order.status = 'pending'
+                order.save()
+                return Response(
+                    {"message": f"Order {id} payment failed."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        except Order.DoesNotExist:
+            return Response({"error": f"Order {id} not found."}, status=status.HTTP_404_NOT_FOUND)
+        except requests.RequestException as e:
+            return Response(
+                {"error": f"Payment request failed: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

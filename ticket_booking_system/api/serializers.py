@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Ticket, Event, Order, User
+from .tasks import update_order_status_to_failed
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
@@ -89,21 +90,11 @@ class OrderSerializer(serializers.ModelSerializer):
         tickets_data = validated_data.pop('tickets', [])
         order = Order.objects.create(**validated_data)
 
+        # Start the Celery task to update the status in 15 minutes.
+        update_order_status_to_failed.apply_async(args=[order.id], countdown=15*60)
+
         for ticket_data in tickets_data:
             ticket_data['owner'] = validated_data['user']
             Ticket.objects.create(order=order, **ticket_data)
-
-        # tickets = []
-        # for ticket_data in tickets_data:
-        #     event = ticket_data['event']
-        #     
-        #     ticket = Ticket(
-        #         event=event,
-        #         owner=validated_data['user'],
-        #         order=order
-        #     )
-        #     tickets.append(ticket)
-        # 
-        # Ticket.objects.bulk_create(tickets)
 
         return order
