@@ -10,7 +10,7 @@ def update_order_status_to_failed(order_id):
         order = Order.objects.get(id=order_id)
     
         # Check if the status is still 'pending'
-        if order.status == 'pending' and timezone.now() > order.created_at + timedelta(minutes=15):
+        if order.status == 'pending':
             order.status = 'failed'
             order.save()
 
