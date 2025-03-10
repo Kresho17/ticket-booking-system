@@ -9,7 +9,7 @@ This is a ticket booking system built with Django, Redis as a message broker, an
 First, clone the project from GitHub:
 
 ```bash
-git clone https://github.com/<username>/ticket-booking-system.git
+git clone [https://github.com/Kresho17/ticket-booking-system.git]
 cd ticket-booking-system
 ```
 
