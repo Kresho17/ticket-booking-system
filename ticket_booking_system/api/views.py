@@ -11,6 +11,7 @@ from .models import Ticket, Event, Order
 from .serializers import EventSerializer, OrderSerializer, UserRegistrationSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
+from api.paginaion import CustomPagination
 
 
 logger = logging.getLogger("Payments_logger")
@@ -20,6 +21,7 @@ logger = logging.getLogger("Payments_logger")
 class EventList(generics.ListCreateAPIView):
     queryset = Event.objects.all()
     serializer_class = EventSerializer
+    pagination_class = CustomPagination
 
     # Set Permissions for different requests
     def get_permissions(self):
