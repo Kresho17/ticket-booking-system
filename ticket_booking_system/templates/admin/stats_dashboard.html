@@ -1,0 +1,23 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+  <h1>Statistics</h1>
+
+  <h2>Tickets Sold per Event</h2>
+  <ul>
+    {% for event in events %}
+      <li>{{ event.name }}: {{ event.ticket_count }} tickets sold</li>
+    {% endfor %}
+  </ul>
+
+  <h2>Order Status</h2>
+  <p>Paid Tickets: {{ paid_orders.paid_tickets }}</p>
+  <p>Unpaid Reservations: {{ unpaid_orders.unpaid_tickets }}</p>
+
+  <h2>Top Users by Tickets Purchased</h2>
+  <ul>
+    {% for user in top_users %}
+      <li>{{ user.username }}: {{ user.ticket_count }} tickets</li>
+    {% endfor %}
+  </ul>
+{% endblock %}
